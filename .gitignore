@@ -1,0 +1,12 @@
+\#*
+.\#*
+.*
+!.gitignore
+*.swp
+*~
+*.swo
+*.git
+$.swn
+Apps/Common/Conf/db.php
+Runtime/
+uploads/
