@@ -9,16 +9,58 @@
 class RedisClient {
     public $remote;
     public $resource;
+    public $initCommands;
     const TIME_OUT = 5.0;
 
-    public function __construct($remote)
+    /**
+     * 初始化一个redis资源
+     * @param string $remote 一个redis tcp uri 比如：tcp://127.0.0.1
+     * @param array $initCommands redis初始化命令，比如认证命令:array('auth','passwd')
+     * */
+    public function __construct($remote, array $initCommands=array())
     {
 
         $this->remote = $remote;
+        $this->initCommands = $initCommands;
+        //$this->connect();
+    }
+    
+    // 连接资源
+    public function connect()
+    {
+        if(!$this->isConnected())
+        {
+            $this->resource = $this->createResource();
+            if($this->initCommands)
+            {
+                $this->executeCommand($this->initCommands);
+            }
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // 获取一个资源
+    public function getResource()
+    {
+        if(isset($this->resource))
+        {
+            return $this->resource;
+        }
+        
         $this->connect();
+        
+        return $this->resource;
+    }
+    
+    // 判断资源是否存在
+    public function isConnected()
+    {
+        return isset($this->resource);
     }
 
-    public function connect()
+    public function createResource()
     {
         $errno=$errstr=null;
         $scoket = stream_socket_client($this->remote, $errno, $errstr, (float) self::TIME_OUT, STREAM_CLIENT_CONNECT);
@@ -28,7 +70,8 @@ class RedisClient {
         }
         stream_set_timeout($scoket, 100);
         
-        $this->resource = $scoket;
+//         $this->resource = $scoket;
+        return $scoket;
     }
     
     // 执行命令返回结果
@@ -75,7 +118,8 @@ class RedisClient {
     public function write($buffer)
     {
 
-        $socket = $this->resource;
+        // $socket = $this->resource;
+        $socket = $this->getResource();
         while (($length = strlen($buffer)) > 0)
         {
             $writlen = @fwrite($socket, $buffer);
@@ -91,7 +135,7 @@ class RedisClient {
     public function read()
     {
 
-        $socket = $this->resource;
+        $socket = $this->getResource();
         $chunk = fgets($socket);
         
         if ($chunk == false || $chunk == '')
@@ -154,8 +198,12 @@ class RedisClient {
     // 关闭stream socket
     public function disconnect()
     {
-        fclose($this->resource);
-        unset($this->resource);
+        if($this->isConnected())
+        {
+            fclose($this->resource);
+            unset($this->resource);
+        }
+        
     }
     
     public function __destruct()
