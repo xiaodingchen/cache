@@ -10,8 +10,12 @@
  
  try {
      $client = new RedisClient('tcp://127.0.0.1:6379');
-     
-     $commands = array('get','test');
+     /**
+      * $commands = array('set','key','value');
+      * $commands = array('get','key');
+      * 
+      * */
+     $commands = array('ping');
      
      $result = $client->executeCommand($commands);
  } catch (Exception $e) {
