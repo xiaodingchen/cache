@@ -20,9 +20,14 @@ class RedisClient {
 
     public function connect()
     {
-
+        $errno=$errstr=null;
         $scoket = stream_socket_client($this->remote, $errno, $errstr, (float) self::TIME_OUT, STREAM_CLIENT_CONNECT);
+        if($errno)
+        {
+            throw new Exception("{$errno}:{$errstr}");
+        }
         stream_set_timeout($scoket, 100);
+        
         $this->resource = $scoket;
     }
     
