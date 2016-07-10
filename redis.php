@@ -93,6 +93,7 @@ class RedisClient {
 
         $socket = $this->resource;
         $chunk = fgets($socket);
+        
         if ($chunk == false || $chunk == '')
         {throw new Exception('socket read faild!');}
         
@@ -148,6 +149,18 @@ class RedisClient {
                 throw new Exception('Unknown response prefix: '.$prefix);
                 return;
         }
+    }
+    
+    // 关闭stream socket
+    public function disconnect()
+    {
+        fclose($this->resource);
+        unset($this->resource);
+    }
+    
+    public function __destruct()
+    {
+        $this->disconnect();
     }
 
 }
