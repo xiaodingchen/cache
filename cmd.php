@@ -34,7 +34,8 @@ class cmd {
         
         if (isset($_SERVER ['argv'] [1]))
         {
-            echo 'do somting';
+            array_shift($_SERVER['argv']);
+            echo implode(' ', $_SERVER['argv'])." ok.\n";
         }
         else
         {
