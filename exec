@@ -1,0 +1,7 @@
+#!/usr/bin/env php
+<?php
+
+require_once 'cmd.php';
+
+$cmd = new cmd;
+$cmd->run();
