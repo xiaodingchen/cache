@@ -10,6 +10,7 @@ class RedisClient {
     public $remote;
     public $resource;
     public $initCommands;
+    public $errmsg;
     const TIME_OUT = 5.0;
 
     /**
@@ -17,21 +18,20 @@ class RedisClient {
      * @param string $remote 一个redis tcp uri 比如：tcp://127.0.0.1
      * @param array $initCommands redis初始化命令，比如认证命令:array('auth','passwd')
      * */
-    public function __construct($remote, array $initCommands=array())
+    public function __construct($remote, array $initCommands = array())
     {
-
         $this->remote = $remote;
         $this->initCommands = $initCommands;
-        //$this->connect();
+        // $this->connect();
     }
     
     // 连接资源
     public function connect()
     {
-        if(!$this->isConnected())
+        if (! $this->isConnected())
         {
             $this->resource = $this->createResource();
-            if($this->initCommands)
+            if ($this->initCommands)
             {
                 $this->executeCommand($this->initCommands);
             }
@@ -44,10 +44,8 @@ class RedisClient {
     // 获取一个资源
     public function getResource()
     {
-        if(isset($this->resource))
-        {
-            return $this->resource;
-        }
+        if (isset($this->resource))
+        {return $this->resource;}
         
         $this->connect();
         
@@ -60,24 +58,24 @@ class RedisClient {
         return isset($this->resource);
     }
 
+    // 创建资源
     public function createResource()
     {
-        $errno=$errstr=null;
+        $errno = $errstr = null;
         $scoket = stream_socket_client($this->remote, $errno, $errstr, (float) self::TIME_OUT, STREAM_CLIENT_CONNECT);
-        if($errno)
+        if ($errno)
         {
-            throw new Exception("{$errno}:{$errstr}");
+            throw new Exception($this->errmsg);
         }
         stream_set_timeout($scoket, 100);
         
-//         $this->resource = $scoket;
+        // $this->resource = $scoket;
         return $scoket;
     }
     
     // 执行命令返回结果
     public function executeCommand(array $arguments)
     {
-
         $this->writeRequest($arguments);
         return $this->readResponse($arguments);
     }
@@ -85,14 +83,12 @@ class RedisClient {
     // 读取命令执行后的结果
     public function readResponse(array $arguments)
     {
-
         return $this->read();
     }
     
     // 处理命令执行请求
     public function writeRequest(array $arguments)
     {
-
         $commandID = strtoupper(array_shift($arguments));
         // $arguments = $arguments;
         $reqlen = count($arguments) + 1;
@@ -100,13 +96,13 @@ class RedisClient {
         
         // 根据redis协议组合命令
         $buffer = "*{$reqlen}\r\n\${$cmdlen}\r\n{$commandID}\r\n";
-        $argslen = $reqlen-1;
-        if($argslen)
+        $argslen = $reqlen - 1;
+        if ($argslen)
         {
-            for($i = 0; $i < $argslen; $i++)
+            for($i = 0; $i < $argslen; $i ++)
             {
-                $arglen = strlen($arguments[$i]);
-                $argument = $arguments[$i];
+                $arglen = strlen($arguments [$i]);
+                $argument = $arguments [$i];
                 $buffer .= "\${$arglen}\r\n{$argument}\r\n";
             }
         }
@@ -117,7 +113,6 @@ class RedisClient {
     // 执行命令
     public function write($buffer)
     {
-
         // $socket = $this->resource;
         $socket = $this->getResource();
         while (($length = strlen($buffer)) > 0)
@@ -134,7 +129,6 @@ class RedisClient {
     // 读取结果
     public function read()
     {
-
         $socket = $this->getResource();
         $chunk = fgets($socket);
         
@@ -142,9 +136,9 @@ class RedisClient {
         {throw new Exception('socket read faild!');}
         
         // 根据redis协议进行对返回结果处理，具体查看redis回复协议
-        $prefix = $chunk[0];
+        $prefix = $chunk [0];
         $payload = substr($chunk, 1, - 2);
-        
+        // var_dump($payload,$chunk);
         switch ($prefix)
         {
             case '+' : // 单行回复，回复的第一个字节将是“+”
@@ -152,45 +146,44 @@ class RedisClient {
             case '-' : // 错误消息，回复的第一个字节将是“-”
                 throw new Exception($payload);
                 break;
-            case ':': // 整型数字，回复的第一个字节将是“:”
-                return (int)$payload;
-            case '*': // 多个批量回复，回复的第一个字节将是“*” 
+            case ':' : // 整型数字，回复的第一个字节将是“:”
+                return (int) $payload;
+            case '*' : // 多个批量回复，回复的第一个字节将是“*”
                 $count = (int) $payload;
-                if ($count === -1) {
-                    return;
-                }
+                if ($count === - 1)
+                {return;}
                 
                 $multibulk = array();
                 
-                for ($i = 0; $i < $count; ++$i) {
-                    $multibulk[$i] = $this->read(); // 使用递归方法一直获取数据
+                for($i = 0; $i < $count; ++ $i)
+                {
+                    $multibulk [$i] = $this->read(); // 使用递归方法一直获取数据
                 }
                 
                 return $multibulk;
-            case '$': // 批量回复，回复的第一个字节将是“$”
+            case '$' : // 批量回复，回复的第一个字节将是“$”
                 $size = (int) $payload;
                 
-                if ($size === -1) {
-                    return;
-                }
+                if ($size === - 1)
+                {return;}
                 
                 $bulkData = '';
                 $bytesLeft = ($size += 2);
                 
-                do {
+                do
+                {
                     $chunk = fread($socket, min($bytesLeft, 4096));
-                
-                    if ($chunk === false || $chunk === '') {
-                        throw new Exception('Error while reading bytes from the server');
-                    }
-                
+                    
+                    if ($chunk === false || $chunk === '')
+                    {throw new Exception('Error while reading bytes from the server');}
+                    
                     $bulkData .= $chunk;
                     $bytesLeft = $size - strlen($bulkData);
                 } while ($bytesLeft > 0);
                 
-                return substr($bulkData, 0, -2);
+                return substr($bulkData, 0, - 2);
             default :
-                throw new Exception('Unknown response prefix: '.$prefix);
+                throw new Exception('Unknown response prefix: ' . $prefix);
                 return;
         }
     }
@@ -198,14 +191,20 @@ class RedisClient {
     // 关闭stream socket
     public function disconnect()
     {
-        if($this->isConnected())
+        if ($this->isConnected())
         {
             fclose($this->resource);
             unset($this->resource);
         }
-        
     }
     
+    // 调用command
+    public function __call($name, $arguments)
+    {
+        array_unshift($arguments, $name);
+        return $this->executeCommand($arguments);
+    }
+
     public function __destruct()
     {
         $this->disconnect();
