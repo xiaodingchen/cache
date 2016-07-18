@@ -1,9 +1,10 @@
 <?php
+
 /**
  * test_session.php 
+ * 
  *
- * @copyright  Copyright (c) 2005-2016 ShopEx Technologies Inc. (http://www.shopex.cn)
- * @license  http://ecos.shopex.cn/ ShopEx License
+ * @author     late.xiao@qq.com
  */
  
  require 'client.php';
