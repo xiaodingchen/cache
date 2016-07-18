@@ -7,13 +7,13 @@
  * @author     late.xiao@qq.com
  */
 class SessionClient {
-
-    protected $options = array();
     protected $handler;
-    
+    protected $prefix='session';
+    protected $life_time;
     public function __construct($type='',$options = array(), $start=true)
     {
         $this->handler = $this->connect($type, $options);
+        $this->life_time = ini_get('session.gc_maxlifetime');
         session_set_save_handler(
         array(&$this->handler, 'open'),
         array(&$this->handler, 'close'),
@@ -34,9 +34,9 @@ class SessionClient {
     public function connect($type='',$options = array())
     {
         if(empty($type)) $type = 'file';
-        if(file_exists($type.'php'))
+        if(file_exists($type.'.php'))
         {
-            require $type.'php';
+            require $type.'.php';
             $class = 'Session'.ucfirst($type);
             return new $class($options);
         }

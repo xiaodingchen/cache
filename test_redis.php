@@ -21,7 +21,7 @@
 //      $commands = array('set', 'ese');
      
 //      $result = $client->executeCommand($commands);
-    $result = $client->set('dsw','val','ex',100,'nx');
+    $result = $client->type('dsw');
  } catch (Exception $e) {
      exit($e->getMessage());
  }
